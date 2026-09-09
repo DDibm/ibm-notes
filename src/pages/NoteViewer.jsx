@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProjects } from '../context/ProjectsContext';
 import { Button, Tag } from '@carbon/react';
-import { ArrowLeft, TrashCan, Time, UserMultiple } from '@carbon/icons-react';
+import { ArrowLeft, TrashCan, Time, UserMultiple, Chat } from '@carbon/icons-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ChatPanel from '../components/ChatPanel';
 
 export default function NoteViewer() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { projects, deleteProject } = useProjects();
+  const [chatOpen, setChatOpen] = useState(false);
 
   const project = projects.find((p) => p.id === id);
 
@@ -47,7 +50,6 @@ export default function NoteViewer() {
 
   // Custom renderers for react-markdown
   const components = {
-    // Style blockquotes as callout cards
     blockquote({ children }) {
       const text = String(children);
       let cls = 'callout-info';
@@ -57,7 +59,6 @@ export default function NoteViewer() {
       else if (text.includes('⚡')) cls = 'callout-warning';
       return <blockquote className={cls}>{children}</blockquote>;
     },
-    // Render mermaid code blocks as styled pre blocks (no live rendering needed)
     code({ className, children, ...props }) {
       const isMermaid = className === 'language-mermaid';
       if (isMermaid) {
@@ -85,7 +86,6 @@ export default function NoteViewer() {
         </code>
       );
     },
-    // Tables
     table({ children }) {
       return (
         <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
@@ -179,6 +179,14 @@ export default function NoteViewer() {
         {/* Actions */}
         <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.5rem' }}>
           <Button
+            kind="primary"
+            size="sm"
+            renderIcon={Chat}
+            onClick={() => setChatOpen((v) => !v)}
+          >
+            {chatOpen ? 'Close chat' : 'Ask AI about these notes'}
+          </Button>
+          <Button
             kind="danger--ghost"
             size="sm"
             renderIcon={TrashCan}
@@ -189,14 +197,22 @@ export default function NoteViewer() {
         </div>
       </div>
 
-      {/* Document content */}
-      <div className="note-viewer-content">
+      {/* Document content — shrinks when chat panel is open */}
+      <div
+        className="note-viewer-content"
+        style={{ marginRight: chatOpen ? '420px' : 0, transition: 'margin-right 0.2s ease' }}
+      >
         <div className="note-document">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
             {project.output}
           </ReactMarkdown>
         </div>
       </div>
+
+      {/* Chat panel */}
+      {chatOpen && (
+        <ChatPanel project={project} onClose={() => setChatOpen(false)} />
+      )}
     </div>
   );
 }
