@@ -9,6 +9,7 @@ import {
   InlineNotification,
 } from '@carbon/react';
 import { Add, ArrowLeft } from '@carbon/icons-react';
+import FileDropZone from '../components/FileDropZone';
 
 export default function NewProject() {
   const navigate = useNavigate();
@@ -33,6 +34,11 @@ export default function NewProject() {
   };
 
   const removeTag = (t) => setTags((prev) => prev.filter((x) => x !== t));
+
+  // Called when FileDropZone extracts text — appends to existing raw notes
+  const handleFilesExtracted = (text) => {
+    setRawNotes((prev) => (prev ? `${prev}\n\n${text}` : text));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -60,15 +66,6 @@ export default function NewProject() {
 
     addProject(project);
     navigate(`/project/${project.id}`);
-  };
-
-  const labelStyle = {
-    fontFamily: "'IBM Plex Sans', sans-serif",
-    fontSize: '0.875rem',
-    fontWeight: 600,
-    color: 'var(--cds-text-primary)',
-    marginBottom: '0.375rem',
-    display: 'block',
   };
 
   return (
@@ -102,8 +99,7 @@ export default function NewProject() {
           margin: '0 0 2rem',
         }}
       >
-        Save a notes project — paste in your raw notes and the formatted output
-        document.
+        Save a notes project — drop in your source files and paste the formatted output.
       </p>
 
       {error && (
@@ -152,7 +148,17 @@ export default function NewProject() {
 
         {/* Tags */}
         <div>
-          <label htmlFor="tag-input" style={labelStyle}>
+          <label
+            htmlFor="tag-input"
+            style={{
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: 'var(--cds-text-primary)',
+              marginBottom: '0.375rem',
+              display: 'block',
+            }}
+          >
             Tags
           </label>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -178,13 +184,7 @@ export default function NewProject() {
           {tags.length > 0 && (
             <div className="meta-row">
               {tags.map((t) => (
-                <Tag
-                  key={t}
-                  type="blue"
-                  size="sm"
-                  onClose={() => removeTag(t)}
-                  filter
-                >
+                <Tag key={t} type="blue" size="sm" onClose={() => removeTag(t)} filter>
                   {t}
                 </Tag>
               ))}
@@ -192,10 +192,18 @@ export default function NewProject() {
           )}
         </div>
 
+        {/* File drop zone — populates raw notes */}
+        <FileDropZone
+          label="Raw notes — drag & drop files"
+          onFilesExtracted={handleFilesExtracted}
+        />
+
+        {/* Raw notes textarea — shows extracted text, also manually editable */}
         <TextArea
           id="project-raw-notes"
-          labelText="Raw notes (optional)"
-          placeholder="Paste the original notes or source material here…"
+          labelText="Extracted notes (editable)"
+          helperText="Populated automatically from dropped files, or paste manually"
+          placeholder="Your raw notes will appear here after dropping files…"
           value={rawNotes}
           onChange={(e) => setRawNotes(e.target.value)}
           rows={6}
